@@ -14,8 +14,13 @@ var priorDuration = function(object) {
 }
 
 // flat prior over events (1-10)
-var priorNEvents = function() {
- return categorical({vs:_.range(1,11,1)})
+//var priorNEvents = function() {
+// return categorical({vs:_.range(1,11,1)})
+//}
+
+// flat prior over events (1-10)
+var priorNEvents = function(){
+  return flip(0.5) ? 1 : categorical({vs:_.range(2,11,1)})
 }
 
 // prior over event states
@@ -35,10 +40,10 @@ var priorTimeframe = function(){
 }
 
 // generate utterance given verb and object
-var phi = 0.9
+var phi = 0.99
 var priorUttr = function(verb,object){
   var timeframe = priorTimeframe()
-  return flip(0.9) ? {'verb':verb,'object':object,'timeframe': timeframe}: {'verb':verb,'object':object,'timeframe': 'null'}
+  return flip(phi) ? {'verb':verb,'object':object,'timeframe': timeframe}: {'verb':verb,'object':object,'timeframe': 'null'}
 }
 
 // prior on interpretations
@@ -137,6 +142,7 @@ var pragmaticListener = function(utterance){
             'interpretation': interpretation}
   }})}
 
-//var uttr = {'verb':"cleaning",'object':"ocean",'timeframe':{'num':1,'unit':'second(s)'}}
-var nullUttr = {'verb':"cleaning",'object':"ocean",'timeframe':"null"}
-marginalize(pragmaticListener(nullUttr),'interpretation')
+var uttr = {'verb':"cleaning",'object':"ocean",'timeframe':{'num':1,'unit':'year(s)'}}
+//var uttr = {'verb':"cleaning",'object':"ocean",'timeframe':"null"}
+print(uttr)
+marginalize(pragmaticListener(uttr),'interpretation')
