@@ -1,28 +1,45 @@
 // ------------ priors ------------ 
 // verb-object pairs
-var verb_objects = {"cleaning":["table","ocean"]}
+var verb_objects = {"cleaning":["brush","ocean","street","island"],"solving":["JigsawPuzzle","RubiksCube","crisis","dilemma"],
+                   "breaking":["bottle","cage","diamond","OlympicRecord"],
+                   "painting":["cabinet","cathedral","city","factory"]}
 
 // duration probabilities
-var object_probs = {'table':[0.05,0.05,0.2,0.3,0.2,0.1,0.05,0.05],
-                 'ocean':[0.05,0.05,0.05,0.05,0.05,0.05,0.2,0.5]}
+var object_probs = {
+  // clean
+  'brush': [0.171428571,0.685714286,0.142857143,1e-20,1e-20,1e-20,1e-20,1e-20],
+  'island':[1e-20,1e-20,1e-20,0.057142857,0.257142857,0.285714286,0.257142857,0.142857143],
+  'ocean':[1e-20,1e-20,1e-20,1e-20,0.028571429,1e-20,0.028571429,0.942857143],
+  'street':[1e-20,0.028571429,0.571428571,0.171428571,0.142857143,0.085714286,1e-20,1e-20],
+  // paint
+  'cabinet':[1e-20,0.2,0.742857143,0.057142857,1e-20,1e-20,1e-20,1e-20],
+  'cathedral':[1e-20,1e-20,1e-20,0.171428571,0.228571429,0.371428571,0.171428571,0.057142857],
+  'city':[1e-20,1e-20,0.028571429,1e-20,0.057142857,0.142857143,0.371428571,0.4],
+  'factory':[1e-20,1e-20,1e-20,0.342857143,0.314285714,0.314285714,0.028571429,1e-20],
+  // break
+  'bottle':[1,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20],
+  'cage':[0.085714286,0.485714286,0.228571429,0.114285714,1e-20,0.085714286,1e-20,1e-20],
+  'diamond':[0.057142857,0.2,0.257142857,0.228571429,1e-20,0.028571429,0.085714286,0.142857143],
+  'OlympicRecord':[0.171428571,0.057142857,0.028571429,1e-20,0.057142857,1e-20,0.628571429,0.057142857],
+  // solve
+  'JigsawPuzzle':[1e-20,0.171428571,0.571428571,0.228571429,0.028571429,1e-20,1e-20,1e-20],
+  'RubiksCube':[0.057142857,0.571428571,0.314285714,0.057142857,1e-20,1e-20,1e-20,1e-20],
+  'crisis':[0.028571429,0.142857143,0.257142857,0.257142857,0.114285714,0.057142857,0.114285714,0.028571429],
+  'dilemma':[1e-20,0.371428571,0.314285714,0.114285714,0.057142857,0.057142857,0.057142857,0.028571429]
+  }
 
-// prior over durations
+
 var priorDuration = function(object) {
-  var T = [1,60,3600,86400,604800,2630000,31600000,316000000]
+  var T = [1,60,3600,86400,604800,2419200,31556926,315569260]
+  //var T = [2,120,7200,172800,1209600,4838400,63113852,631138520]
   var p = object_probs[object]
   return categorical({ps:p,vs:T})
 }
 
 // flat prior over events (1-10)
-//var priorNEvents = function() {
-// return categorical({vs:_.range(1,11,1)})
-//}
-
-// flat prior over events (1-10)
 var priorNEvents = function(){
   return flip(0.5) ? 1 : categorical({vs:_.range(2,11,1)})
 }
-
 // prior over event states
 var priorEventState = function(object) {
   var D = priorDuration(object)
@@ -40,7 +57,7 @@ var priorTimeframe = function(){
 }
 
 // generate utterance given verb and object
-var phi = 0.99
+var phi = 1 - 1e-10
 var priorUttr = function(verb,object){
   var timeframe = priorTimeframe()
   return flip(phi) ? {'verb':verb,'object':object,'timeframe': timeframe}: {'verb':verb,'object':object,'timeframe': 'null'}
@@ -58,10 +75,16 @@ var calcEventSpan = function(state){
   return state.duration * state.numEvents
 }
 // calculate length of timeframe (in secs) given state
+//var calcTimeframe = function(timeframe){
+//  var timeUnits = {'second(s)':1,'minute(s)':60,'hour(s)':3600,'day(s)':86400,
+//                   'week(s)':604800,'month(s)':2419200,'year(s)':31556926}
+//  return timeframe.num * timeUnits[timeframe.unit]
+//}
+
 var calcTimeframe = function(timeframe){
-  var timeUnits = {'second(s)':1,'minute(s)':60,'hour(s)':3600,'day(s)':86400,'week(s)':604800,
-                   'month(s)':2630000,'year(s)':31600000}
-  return timeframe.num * timeUnits[timeframe.unit]
+  var timeUnits = {'second(s)':2,'minute(s)':120,'hour(s)':7200,'day(s)':172800,
+                   'week(s)':1209600,'month(s)':4838400,'year(s)':63113852}
+  return timeUnits[timeframe.unit]
 }
 
 // generate temporal adverbial string given sampled state
@@ -114,7 +137,7 @@ var literalListener = function(utterance,interpretation) {
 // Speaker
 // constant cost
 var cost = function(utterance){
-  return utterance.timeframe == "null"? 1 : 2
+  return utterance.timeframe == "null"? 2 : 1
 }
 
 // set alpha to 1
@@ -142,7 +165,6 @@ var pragmaticListener = function(utterance){
             'interpretation': interpretation}
   }})}
 
-var uttr = {'verb':"cleaning",'object':"ocean",'timeframe':{'num':1,'unit':'year(s)'}}
-//var uttr = {'verb':"cleaning",'object':"ocean",'timeframe':"null"}
-print(uttr)
-marginalize(pragmaticListener(uttr),'interpretation')
+var uttr1 = {'verb':"solving",'object':"JigsawPuzzle",'timeframe':{'num':2,'unit':'minute(s)'}}
+var d1 = marginalize(pragmaticListener(uttr1),'interpretation')
+display(d1)
